@@ -18,7 +18,7 @@ def full_state_feedback(dev):
 
     loop = SoftRealtimeLoop(dt = 0.001, report=True, fade=0)
     amp = 1.0
-  
+
     for t in loop:
         dev.update()
         if t < 1.0:
@@ -27,7 +27,7 @@ def full_state_feedback(dev):
         else:
             des_τ = loop.fade*amp*chirp.next(t)*3/3.7
             dev.torque = des_τ
-            dev.position = (np.pi/2)*int(t)
+            dev.position = (np.pi/4)*int(t)
 
     del loop
 

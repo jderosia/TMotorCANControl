@@ -11,7 +11,7 @@ def position_step(dev):
     dev.set_zero_position() # has a delay!
     time.sleep(1.5)
     dev.set_impedance_gains_real_unit(K=10,B=0.5)
-    
+
     print("Starting position step demo. Press ctrl+C to quit.")
 
     loop = SoftRealtimeLoop(dt = 0.01, report=True, fade=0)
@@ -20,7 +20,9 @@ def position_step(dev):
         if t < 1.0:
             dev.position = 0.0
         else:
-            dev.position = np.pi/2.0
+            dev.position = 1
+
+        print("Actual: ", round(dev.get_output_angle_radians(), 3), "Desired: ", dev._command.position)
 
     del loop
 

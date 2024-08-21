@@ -38,7 +38,7 @@ MIT_Params = {
             'Kd_min': 0.0,
             'Kd_max': 5.0,
             'Kt_TMotor' : 0.091, # from TMotor website (actually 1/Kvll)
-            'Current_Factor' : 0.59, # to correct the qaxis current 
+            'Current_Factor' : 0.59, # to correct the qaxis current
             'Kt_actual': 0.115,# Need to use the right constant -- 0.115 by our calcs, 0.091 by theirs. At output leads to 1.31 by them and 1.42 by us.
             'GEAR_RATIO': 9.0, # hence the 9 in the name
             'Use_derived_torque_constants': True, # true if you have a better model
@@ -59,7 +59,7 @@ MIT_Params = {
             'Kt_TMotor' : 0.16, # from TMotor website (actually 1/Kvll)
             'Current_Factor' : 0.59, # UNTESTED CONSTANT!
             'Kt_actual': 0.206, # UNTESTED CONSTANT!
-            'GEAR_RATIO': 9.0, 
+            'GEAR_RATIO': 9.0,
             'Use_derived_torque_constants': False, # true if you have a better model
         },
         'AK60-6':{
@@ -76,7 +76,7 @@ MIT_Params = {
             'Kt_TMotor' : 0.068, # from TMotor website (actually 1/Kvll)
             'Current_Factor' : 0.59, # # UNTESTED CONSTANT!
             'Kt_actual': 0.087, # UNTESTED CONSTANT!
-            'GEAR_RATIO': 6.0, 
+            'GEAR_RATIO': 6.0,
             'Use_derived_torque_constants': False, # true if you have a better model
         },
         'AK70-10':{
@@ -110,7 +110,7 @@ MIT_Params = {
             'Kt_TMotor' : 0.091, # from TMotor website (actually 1/Kvll)
             'Current_Factor' : 0.59, # # UNTESTED CONSTANT!
             'Kt_actual': 0.017,  # UNTESTED CONSTANT!
-            'GEAR_RATIO': 6.0, 
+            'GEAR_RATIO': 6.0,
             'Use_derived_torque_constants': False, # true if you have a better model
         },
         'AK80-64':{
@@ -237,7 +237,7 @@ class motorListener(can.Listener):
     def __init__(self, canman, motor):
         """
         Sets stores can manager and motor object references
-        
+
         Args:
             canman: The CanManager object to get messages from
             motor: The TMotorCANManager object to update
@@ -271,7 +271,7 @@ class CAN_Manager(object):
     """
     Used to keep track of one instantation of the class to make a singleton object
     """
-    
+
     def __new__(cls):
         """
         Makes a singleton object to manage a socketcan_native CAN bus.
@@ -296,13 +296,13 @@ class CAN_Manager(object):
         ALl initialization happens in __new__
         """
         pass
-        
+
     def __del__(self):
         """
         # shut down the CAN bus when the object is deleted
         # This may not ever get called, so keep a reference and explicitly delete if this is important.
         """
-        os.system( 'sudo /sbin/ip link set can0 down' ) 
+        os.system( 'sudo /sbin/ip link set can0 down' )
 
     # subscribe a motor object to the CAN bus to be updated upon message reception
     def add_motor(self, motor):
@@ -333,7 +333,7 @@ class CAN_Manager(object):
         else:
             return value
 
-    # interpolates a floating point number to fill some amount of the max size of unsigned int, 
+    # interpolates a floating point number to fill some amount of the max size of unsigned int,
     # as specified with the num_bits
     @staticmethod
     def float_to_uint(x,x_min,x_max,num_bits):
@@ -351,7 +351,7 @@ class CAN_Manager(object):
         bitratio = float((1<<num_bits)/span)
         x = CAN_Manager.limit_value(x,x_min,x_max-(2/bitratio))
         # (x - x_min)*(2^num_bits)/span
-        
+
         return CAN_Manager.limit_value(int((x- x_min)*( bitratio )),0,int((x_max-x_min)*bitratio) )
 
     # undoes the above method
@@ -381,10 +381,10 @@ class CAN_Manager(object):
         """
         DLC = len(data)
         assert (DLC <= 8), ('Data too long in message for motor ' + str(motor_id))
-        
+
         if self.debug:
             print('ID: ' + str(hex(motor_id)) + '   Data: ' + '[{}]'.format(', '.join(hex(d) for d in data)) )
-        
+
         message = can.Message(arbitration_id=motor_id, data=data, is_extended_id=False)
         try:
             self.bus.send(message)
@@ -403,7 +403,7 @@ class CAN_Manager(object):
             motor_id: The CAN ID of the motor to send the message to.
         """
         self.send_MIT_message(motor_id, [ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,0XFC])
-        
+
     # send the power off code
     def power_off(self, motor_id):
         """
@@ -428,7 +428,7 @@ class CAN_Manager(object):
     # basically an impedance controller
     def MIT_controller(self, motor_id, motor_type, position, velocity, Kp, Kd, I):
         """
-        Sends an MIT style control signal to the motor. This signal will be used to generate a 
+        Sends an MIT style control signal to the motor. This signal will be used to generate a
         current for the field-oriented controller on the motor control chip, given by this expression:
 
             q_control = Kp*(position - current_position) + Kd*(velocity - current_velocity) + I
@@ -442,15 +442,15 @@ class CAN_Manager(object):
             Kd: The velocity gain
             I: The additional current
         """
-        position_uint16 = CAN_Manager.float_to_uint(position, MIT_Params[motor_type]['P_min'], 
+        position_uint16 = CAN_Manager.float_to_uint(position, MIT_Params[motor_type]['P_min'],
                                                     MIT_Params[motor_type]['P_max'], 16)
-        velocity_uint12 = CAN_Manager.float_to_uint(velocity, MIT_Params[motor_type]['V_min'], 
+        velocity_uint12 = CAN_Manager.float_to_uint(velocity, MIT_Params[motor_type]['V_min'],
                                                     MIT_Params[motor_type]['V_max'], 12)
-        Kp_uint12 = CAN_Manager.float_to_uint(Kp, MIT_Params[motor_type]['Kp_min'], 
+        Kp_uint12 = CAN_Manager.float_to_uint(Kp, MIT_Params[motor_type]['Kp_min'],
                                                     MIT_Params[motor_type]['Kp_max'], 12)
-        Kd_uint12 = CAN_Manager.float_to_uint(Kd, MIT_Params[motor_type]['Kd_min'], 
+        Kd_uint12 = CAN_Manager.float_to_uint(Kd, MIT_Params[motor_type]['Kd_min'],
                                                     MIT_Params[motor_type]['Kd_max'], 12)
-        I_uint12 = CAN_Manager.float_to_uint(I, MIT_Params[motor_type]['T_min'], 
+        I_uint12 = CAN_Manager.float_to_uint(I, MIT_Params[motor_type]['T_min'],
                                                     MIT_Params[motor_type]['T_max'], 12)
 
         data = [
@@ -476,11 +476,11 @@ class CAN_Manager(object):
             motor_type: A string noting the type of motor, ie 'AK80-9'
 
         Returns:
-            An MIT_Motor_State namedtuple that contains floating point values for the 
+            An MIT_Motor_State namedtuple that contains floating point values for the
             position, velocity, current, temperature, and error in rad, rad/s, amps, and *C.
-            0 means no error. 
-            
-            Notably, the current is converted to amps from the reported 
+            0 means no error.
+
+            Notably, the current is converted to amps from the reported
             'torque' value, which is i*Kt. This allows control based on actual q-axis current,
             rather than estimated torque, which doesn't account for friction losses.
         """
@@ -490,16 +490,16 @@ class CAN_Manager(object):
         position_uint = data[1] <<8 | data[2]
         velocity_uint = ((data[3] << 8) | (data[4]>>4) <<4 ) >> 4
         current_uint = (data[4]&0x0F)<<8 | data[5]
-        
+
         if len(data)  == 8:
             temp = int(data[6])
             error = int(data[7])
 
-        position = CAN_Manager.uint_to_float(position_uint, MIT_Params[motor_type]['P_min'], 
+        position = CAN_Manager.uint_to_float(position_uint, MIT_Params[motor_type]['P_min'],
                                             MIT_Params[motor_type]['P_max'], 16)
-        velocity = CAN_Manager.uint_to_float(velocity_uint, MIT_Params[motor_type]['V_min'], 
+        velocity = CAN_Manager.uint_to_float(velocity_uint, MIT_Params[motor_type]['V_min'],
                                             MIT_Params[motor_type]['V_max'], 12)
-        current = CAN_Manager.uint_to_float(current_uint, MIT_Params[motor_type]['T_min'], 
+        current = CAN_Manager.uint_to_float(current_uint, MIT_Params[motor_type]['T_min'],
                                             MIT_Params[motor_type]['T_max'], 12)
 
         if self.debug:
@@ -517,9 +517,9 @@ class CAN_Manager(object):
 
 # defualt variables to be logged
 LOG_VARIABLES = [
-    "output_angle", 
-    "output_velocity", 
-    "output_acceleration", 
+    "output_angle",
+    "output_velocity",
+    "output_acceleration",
     "current",
     "output_torque"
 ]
@@ -591,24 +591,24 @@ class TMotorManager_mit_can():
         self._last_command_time = None
         self._updated = False
         self.SF = 1.0
-        
+
         self.log_vars = log_vars
         self.LOG_FUNCTIONS = {
-            "output_angle" : self.get_output_angle_radians, 
-            "output_velocity" : self.get_output_velocity_radians_per_second, 
-            "output_acceleration" : self.get_output_acceleration_radians_per_second_squared, 
+            "output_angle" : self.get_output_angle_radians,
+            "output_velocity" : self.get_output_velocity_radians_per_second,
+            "output_acceleration" : self.get_output_acceleration_radians_per_second_squared,
             "current" : self.get_current_qaxis_amps,
             "output_torque": self.get_output_torque_newton_meters,
-            "motor_angle" : self.get_motor_angle_radians, 
-            "motor_velocity" : self.get_motor_velocity_radians_per_second, 
-            "motor_acceleration" : self.get_motor_acceleration_radians_per_second_squared, 
-            "motor_torque": self.get_motor_torque_newton_meters 
+            "motor_angle" : self.get_motor_angle_radians,
+            "motor_velocity" : self.get_motor_velocity_radians_per_second,
+            "motor_acceleration" : self.get_motor_acceleration_radians_per_second_squared,
+            "motor_torque": self.get_motor_torque_newton_meters
         }
-        
+
         self._canman = CAN_Manager()
         self._canman.add_motor(self)
-        
-            
+
+
     def __enter__(self):
         """
         Used to safely power the motor on and begin the log file (if specified).
@@ -646,7 +646,7 @@ class TMotorManager_mit_can():
         Try to convert TMotor reported torque to q-axis current
         """
         return MIT_Params[self.type]['Current_Factor']*iTM/(MIT_Params[self.type]['GEAR_RATIO']*MIT_Params[self.type]['Kt_TMotor'])
-    
+
     def qaxis_current_to_TMotor_current(self, iq):
         """
         Try to convert q-axis current to TMotor reported torque
@@ -660,7 +660,7 @@ class TMotorManager_mit_can():
         """
         This method is called by the handler every time a message is recieved on the bus
         from this motor, to store the most recent state information for later
-        
+
         Args:
             MIT_state: The MIT_Motor_State namedtuple with the most recent motor state.
 
@@ -677,10 +677,10 @@ class TMotorManager_mit_can():
 
         # The "Current" supplied by the controller is actually current*Kt, which approximates torque.
         self._motor_state_async.set_state(MIT_state.position, MIT_state.velocity, self.TMotor_current_to_qaxis_current(MIT_state.current), MIT_state.temperature, MIT_state.error, acceleration)
-        
+
         self._updated = True
 
-    
+
     # this method is called by the user to synchronize the current state used by the controller
     # with the most recent message recieved
     def update(self):
@@ -709,13 +709,13 @@ class TMotorManager_mit_can():
         P_max = MIT_Params[self.type]['P_max']+ 0.01
         I_max =  self.TMotor_current_to_qaxis_current(MIT_Params[self.type]['T_max']) + 1.0
         V_max =  MIT_Params[self.type]['V_max']+ 0.01
-        
+
         if self._old_pos is None:
             self._old_pos = self._motor_state_async.position
         old_pos = self._old_pos
         old_curr = self._old_curr
         old_vel = self._old_vel
-        
+
         new_pos = self._motor_state_async.position
         new_curr = self._motor_state_async.current
         new_vel = self._motor_state_async.velocity
@@ -723,7 +723,7 @@ class TMotorManager_mit_can():
         thresh_pos = self._angle_threshold
         thresh_curr = self._current_threshold
         thresh_vel = self._velocity_threshold
-        
+
         curr_command = self._command.current
 
         actual_current = new_curr
@@ -758,14 +758,14 @@ class TMotorManager_mit_can():
             else:
                 actual_current = self.TMotor_current_to_qaxis_current(MIT_Params[self.type]['T_max'])
             new_curr = actual_current
-            
+
 
         # velocity should work the same as position
         if (thresh_vel <= new_vel and new_vel <= V_max) and (-V_max <= old_vel and old_vel <= -thresh_vel):
             self._times_past_velocity_limit -= 1
         elif (thresh_vel <= old_vel and old_vel <= V_max) and (-V_max <= new_vel and new_vel <= -thresh_vel) :
             self._times_past_velocity_limit += 1
-            
+
         # update expanded state variables
         self._old_pos = new_pos
         self._old_curr = new_curr
@@ -775,7 +775,7 @@ class TMotorManager_mit_can():
         self._motor_state.position += self._times_past_position_limit*2*MIT_Params[self.type]['P_max']
         self._motor_state.current = actual_current
         self._motor_state.velocity += self._times_past_velocity_limit*2*MIT_Params[self.type]['V_max']
-        
+
         # send current motor command
         self._send_command()
 
@@ -784,15 +784,15 @@ class TMotorManager_mit_can():
             self.csv_writer.writerow([self._last_update_time - self._start_time] + [self.LOG_FUNCTIONS[var]() for var in self.log_vars])
 
         self._updated = False
-    
+
     # sends a command to the motor depending on whats controlm mode the motor is in
     def _send_command(self):
         """
         Sends a command to the motor depending on whats controlm mode the motor is in. This method
         is called by update(), and should only be called on its own if you don't want to update the motor state info.
 
-        Notably, the current is converted to amps from the reported 'torque' value, which is i*Kt. 
-        This allows control based on actual q-axis current, rather than estimated torque, which 
+        Notably, the current is converted to amps from the reported 'torque' value, which is i*Kt.
+        This allows control based on actual q-axis current, rather than estimated torque, which
         doesn't account for friction losses.
         """
         if self._control_state == _TMotorManState.FULL_STATE:
@@ -834,7 +834,7 @@ class TMotorManager_mit_can():
         The most recently updated motor temperature in degrees C.
         """
         return self._motor_state.temperature
-    
+
     def get_motor_error_code(self):
         """
         Returns:
@@ -906,12 +906,12 @@ class TMotorManager_mit_can():
         self._command.kd = B
         self._command.velocity = 0.0
         self._control_state = _TMotorManState.IMPEDANCE
-    
-    # uses full MIT mode, will send whatever current command is set. 
+
+    # uses full MIT mode, will send whatever current command is set.
     def set_impedance_gains_real_unit_full_state_feedback(self, kp=0, ki=0, K=0.08922, B=0.0038070, ff=0):
         """"
         Uses full state feedback mode, will send whatever current command is set in addition to position request.
-        
+
         Args:
             kp: A dummy argument for backward compatibility with the dephy library.
             ki: A dummy argument for backward compatibility with the dephy library.
@@ -928,7 +928,7 @@ class TMotorManager_mit_can():
     def set_current_gains(self, kp=40, ki=400, ff=128, spoof=False):
         """
         Uses plain current mode, will send 0.0 for position gains in addition to requested current.
-        
+
         Args:
             kp: A dummy argument for backward compatibility with the dephy library.
             ki: A dummy argument for backward compatibility with the dephy library.
@@ -940,7 +940,7 @@ class TMotorManager_mit_can():
     def set_speed_gains(self, kd=1.0):
         """
         Uses plain speed mode, will send 0.0 for position gain and for feed forward current.
-        
+
         Args:
             kd: The gain for the speed controller. Control law will be (v_des - v_actual)*kd = iq
         """
@@ -964,7 +964,7 @@ class TMotorManager_mit_can():
             raise RuntimeError("Cannot control using impedance mode for angles with magnitude greater than " + str(MIT_Params[self.type]["P_max"]) + "rad!")
 
         if self._control_state not in [_TMotorManState.IMPEDANCE, _TMotorManState.FULL_STATE]:
-            raise RuntimeError("Attempted to send position command without gains for device " + self.device_info_string()) 
+            raise RuntimeError("Attempted to send position command without gains for device " + self.device_info_string())
         self._command.position = pos
 
     def set_output_velocity_radians_per_second(self, vel):
@@ -980,7 +980,7 @@ class TMotorManager_mit_can():
             raise RuntimeError("Cannot control using speed mode for angles with magnitude greater than " + str(MIT_Params[self.type]["V_max"]) + "rad/s!")
 
         if self._control_state not in [_TMotorManState.SPEED, _TMotorManState.FULL_STATE]:
-            raise RuntimeError("Attempted to send speed command without gains for device " + self.device_info_string()) 
+            raise RuntimeError("Attempted to send speed command without gains for device " + self.device_info_string())
         self._command.velocity = vel
 
     # used for either current MIT mode to set current
@@ -989,12 +989,12 @@ class TMotorManager_mit_can():
         Used for either current or full state feedback mode to set current command.
         Note, this does not send a command, it updates the TMotorManager's saved command,
         which will be sent when update() is called.
-        
+
         Args:
             current: the desired current in amps.
         """
         if self._control_state not in [_TMotorManState.CURRENT, _TMotorManState.FULL_STATE]:
-            raise RuntimeError("Attempted to send current command before entering current mode for device " + self.device_info_string()) 
+            raise RuntimeError("Attempted to send current command before entering current mode for device " + self.device_info_string())
         self._command.current = current
 
     # used for either current or MIT Mode to set current, based on desired torque
@@ -1003,7 +1003,7 @@ class TMotorManager_mit_can():
         Used for either current or MIT Mode to set current, based on desired torque.
         If a more complicated torque model is available for the motor, that will be used.
         Otherwise it will just use the motor's torque constant.
-        
+
         Args:
             torque: The desired output torque in Nm.
         """
@@ -1013,7 +1013,7 @@ class TMotorManager_mit_can():
     def set_motor_torque_newton_meters(self, torque):
         """
         Version of set_output_torque that accounts for gear ratio to control motor-side torque
-        
+
         Args:
             torque: The desired motor-side torque in Nm.
         """
@@ -1022,7 +1022,7 @@ class TMotorManager_mit_can():
     def set_motor_angle_radians(self, pos):
         """
         Wrapper for set_output_angle that accounts for gear ratio to control motor-side angle
-        
+
         Args:
             pos: The desired motor-side position in rad.
         """
@@ -1031,7 +1031,7 @@ class TMotorManager_mit_can():
     def set_motor_velocity_radians_per_second(self, vel):
         """
         Wrapper for set_output_velocity that accounts for gear ratio to control motor-side velocity
-        
+
         Args:
             vel: The desired motor-side velocity in rad/s.
         """
@@ -1040,7 +1040,7 @@ class TMotorManager_mit_can():
     def get_motor_angle_radians(self):
         """
         Wrapper for get_output_angle that accounts for gear ratio to get motor-side angle
-        
+
         Returns:
             The most recently updated motor-side angle in rad.
         """
@@ -1049,7 +1049,7 @@ class TMotorManager_mit_can():
     def get_motor_velocity_radians_per_second(self):
         """
         Wrapper for get_output_velocity that accounts for gear ratio to get motor-side velocity
-        
+
         Returns:
             The most recently updated motor-side velocity in rad/s.
         """
@@ -1058,7 +1058,7 @@ class TMotorManager_mit_can():
     def get_motor_acceleration_radians_per_second_squared(self):
         """
         Wrapper for get_output_acceleration that accounts for gear ratio to get motor-side acceleration
-        
+
         Returns:
             The most recently updated motor-side acceleration in rad/s/s.
         """
@@ -1067,7 +1067,7 @@ class TMotorManager_mit_can():
     def get_motor_torque_newton_meters(self):
         """
         Wrapper for get_output_torque that accounts for gear ratio to get motor-side torque
-        
+
         Returns:
             The most recently updated motor-side torque in Nm.
         """
@@ -1076,7 +1076,7 @@ class TMotorManager_mit_can():
     # Pretty stuff
     def __str__(self):
         """Prints the motor's device info and current"""
-        return self.device_info_string() + " | Position: " + '{: 1f}'.format(round(self.θ,3)) + " rad | Velocity: " + '{: 1f}'.format(round(self.θd,3)) + " rad/s | current: " + '{: 1f}'.format(round(self.i,3)) + " A | torque: " + '{: 1f}'.format(round(self.τ,3)) + " Nm"
+        return self.device_info_string() + " | Position: " + '{: 1f}'.format(round(self.get_output_angle_radians(),3)) + " rad | Velocity: " + '{: 1f}'.format(round(self.get_output_velocity_radians_per_second(),3)) + " rad/s | current: " + '{: 1f}'.format(round(self.get_current_qaxis_amps(),3)) + " A | torque: " + '{: 1f}'.format(round(self.get_output_torque_newton_meters(),3)) + " Nm"
 
     def device_info_string(self):
         """Prints the motor's ID and device type."""
@@ -1133,7 +1133,7 @@ class TMotorManager_mit_can():
     # motor-side variables
     position_motorside = property(get_motor_angle_radians, set_motor_angle_radians, doc="motor_angle_radians_impedance_only")
     """Motor-side angle in rad"""
-    
+
     velocity_motorside = property (get_motor_velocity_radians_per_second, set_motor_velocity_radians_per_second, doc="motor_velocity_radians_per_second")
     """Motor-side velocity in rad/s"""
 

@@ -11,7 +11,7 @@ def torque_step(dev):
     dev.set_zero_position()
     time.sleep(1.5) # wait for the motor to zero (~1 second)
     dev.set_current_gains()
-    
+
     print("Starting torque step demo. Press ctrl+C to quit.")
     loop = SoftRealtimeLoop(dt = 0.01, report=True, fade=0)
     for t in loop:
@@ -19,7 +19,7 @@ def torque_step(dev):
         if t < 1.0:
             dev.torque = 0.0
         else:
-            dev.torque = 1.0
+            dev.torque = 0.3
 
     del loop
 

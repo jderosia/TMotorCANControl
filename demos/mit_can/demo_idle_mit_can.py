@@ -9,10 +9,10 @@ ID = 1
 def read_only(dev):
     dev.set_zero_position()
     time.sleep(1.5) # wait for the motor to zero (~1 second)
-    
+
     print("Starting read only demo. Press ctrl+C to quit.")
     loop = SoftRealtimeLoop(dt=0.01, report=True, fade=0.0)
-    
+
     for t in loop:
         dev.update()
         print("\r" + str(dev), end='')

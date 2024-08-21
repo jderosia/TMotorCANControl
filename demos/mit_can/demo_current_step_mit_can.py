@@ -10,7 +10,7 @@ def current_step(dev):
     dev.set_zero_position()
     time.sleep(1.5) # wait for the motor to zero (~1 second)
     dev.set_current_gains()
-    
+
     print("Starting current step demo. Press ctrl+C to quit.")
 
     loop = SoftRealtimeLoop(dt = 0.01, report=True, fade=0)
@@ -19,7 +19,9 @@ def current_step(dev):
         if t < 1.0:
             dev.current_qaxis = 0.0
         else:
-            dev.current_qaxis = 0.5
+            dev.current_qaxis = 0.25
+
+        print("Actual: ", round(dev.get_current_qaxis_amps(), 3), "Desired: ", dev._command.current)
 
     del loop
 

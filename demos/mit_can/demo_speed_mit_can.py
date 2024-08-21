@@ -10,7 +10,7 @@ def speed_step(dev):
     dev.set_zero_position()
     time.sleep(1.5) # wait for the motor to zero (~1 second)
     dev.set_speed_gains(kd=3.0)
-    
+
     print("Starting speed step demo. Press ctrl+C to quit.")
     loop = SoftRealtimeLoop(dt = 0.01, report=True, fade=0)
     for t in loop:
@@ -18,8 +18,10 @@ def speed_step(dev):
         if t < 1.0:
             dev.velocity = 0.0
         else:
-            dev.velocity = 1.0
-            
+            dev.velocity = 1
+        dev.update()
+        print("Actual: ", round(dev.get_output_velocity_radians_per_second(), 3), "Desired: ", dev._command.velocity)
+
     del loop
 
 if __name__ == '__main__':
